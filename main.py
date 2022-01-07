@@ -6,7 +6,8 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 
-from my_functions import *
+from mod.utiles import *
+from mod.msg_buffer import MessageBuffer
 
 TOKEN = os.environ["DISCORD_BOT_TOKEN"]
 bot = commands.Bot(command_prefix="!")
@@ -18,6 +19,8 @@ team_tags=[
         tag_data["a_tag"]+tag_data["end_mark"],
         tag_data["b_tag"]+tag_data["end_mark"]
 ]
+
+react_emoji = "👀"
 
 # bot起動完了時に実行される処理
 @bot.event
@@ -46,49 +49,88 @@ async def on_message(message):
     await bot.process_commands(message)
 
 @bot.command()
-async def ab(ctx):
+async def abb(ctx):
+
     # コマンド送信主の入ってるチャンネルを取得
     try:
-        channel= ctx.author.voice.channel
+        v_channel= ctx.author.voice.channel
     except:
         await ctx.send("コマンドの実行者はボイスチャンネルに入室してください")
         return
 
-    # そのチャンネルに参加しているユーザーを取得
-    member_ids = channel.voice_states.keys()
-    users = await ctx.message.guild.query_members(user_ids=[ int(m) for m in member_ids])
-    
-    random.shuffle(users)
+    m_buffer = MessageBuffer()
 
-    for i, user in enumerate(users):
-
-        if user.bot:
+    bot_id = ctx.me.id
+    t_channel = ctx.channel
+    msg = await t_channel.history().get(author__id=bot_id)
+    for react in msg.reactions:
+        if react.emoji != react_emoji:
             continue
-        
-        current_display_name = user.display_name
+        not_taken_users = [user async for user in react.users() if not user.bot]
 
-        # (2回目以降) 今のdisplay_nameからチームタグを取り除く
+    # そのチャンネルに参加しているユーザーを取得
+    member_ids = v_channel.voice_states.keys()
+    users = await ctx.message.guild.query_members(user_ids=[ int(m) for m in member_ids])
+
+    users = get_relative_complement_list(users, not_taken_users)
+
+    if len(users) == 0:
+        m_buffer.append("対象となるユーザーがいません。（全員が不参加のリアクションをしているなど）")
+    elif len(users) == 1:
+
+        current_display_name = users[0].display_name
         orig_display_name = get_clean_display_name(
                                 current_display_name, 
                                 team_tags
                             )
+
+        tag = random.choice(team_tags)
+        
         try:
-            await user.edit(nick=team_tags[i%2]+orig_display_name)
+            await users[0].edit(nick=tag+orig_display_name)
+            m_buffer.append(f"{orig_display_name}さんは{random.choice(team_tags)}です！")
         except:
-            await ctx.send(f"{orig_display_name}さんは{team_tags[i%2]}です！（サーバー主は権限の問題で変更できません...）")
-    # await ctx.send("hello")
+            m_buffer.append(f"{orig_display_name}さんは{tag}です！（サーバー主は権限の問題で変更できません...）")
+    else:
+        random.shuffle(users)
+
+        m_buffer.append(f"{len(users)}人を2チームに分けました")
+
+        for i, user in enumerate(users):
+
+            if user.bot:
+                continue
+            
+            current_display_name = user.display_name
+
+            # (2回目以降) 今のdisplay_nameからチームタグを取り除く
+            orig_display_name = get_clean_display_name(
+                                    current_display_name, 
+                                    team_tags
+                                )
+            try:
+                await user.edit(nick=team_tags[i%2]+orig_display_name)
+            except:
+                m_buffer.append(f"{orig_display_name}さんは{team_tags[i%2]}です！（サーバー主は権限の問題で変更できません...）")
+
+    # m_buffer.append(f"このメッセージに「{react_emoji}」でリアクションすると次のチーム分けは不参加にできます.")
+    embed = discord.Embed(colour=discord.Colour(0xf5a623), description=f"「{react_emoji}」でリアクションすると次のチーム分けは不参加にできます.")
+
+    new_msg = await ctx.send(content=str(m_buffer), embed=embed)
+    await new_msg.add_reaction(react_emoji)
+
 
 # タグを外す
 @bot.command()
-async def reset(ctx):
+async def resett(ctx):
 
     try:
-        channel= ctx.author.voice.channel
+        v_channel= ctx.author.voice.channel
     except:
         await ctx.send("コマンドの実行者はボイスチャンネルに入室してください")
         return
 
-    member_ids = channel.voice_states.keys()
+    member_ids = v_channel.voice_states.keys()
     users = await ctx.message.guild.query_members(user_ids=[ int(m) for m in member_ids])
     for user in users:
         
@@ -104,5 +146,7 @@ async def reset(ctx):
             await user.edit(nick=orig_display_name)
         except:
             pass
+
+    await ctx.send("チームタグを外しました！")
 
 bot.run(TOKEN)

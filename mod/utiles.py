@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-def get_clean_display_name(display_name:str, team_tags:List):
+def get_clean_display_name(display_name:str, team_tags:List) -> str:
 
     update_name = display_name
 
@@ -12,3 +12,13 @@ def get_clean_display_name(display_name:str, team_tags:List):
             break
     
     return update_name
+
+def get_relative_complement_list(main:List, sub:List) -> str:
+
+    # cast to set
+    main = set(main)
+    sub = set(sub)
+
+    relative = main - sub
+
+    return list(relative)
