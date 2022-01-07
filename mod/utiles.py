@@ -1,7 +1,7 @@
-import os
 from typing import List
 
-def get_clean_display_name(display_name:str, team_tags:List) -> str:
+
+def get_clean_display_name(display_name: str, team_tags: List) -> str:
 
     update_name = display_name
 
@@ -10,10 +10,11 @@ def get_clean_display_name(display_name:str, team_tags:List) -> str:
             update_name = display_name.replace(team_tag, "")
             # display_name.removeprefix(team_tag, "")
             break
-    
+
     return update_name
 
-def get_relative_complement_list(main:List, sub:List) -> str:
+
+def get_relative_complement_list(main: List, sub: List) -> str:
 
     # cast to set
     main = set(main)
