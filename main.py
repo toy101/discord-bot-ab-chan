@@ -63,7 +63,7 @@ async def on_message(message):
 
 
 @bot.command()
-async def ab(ctx):
+async def abb(ctx):
 
     # コマンド送信主の入ってるチャンネルを取得
     try:
@@ -79,10 +79,11 @@ async def ab(ctx):
     msg = await t_channel.history().get(author__id=bot_id)
 
     not_taken_users = None
-    for react in msg.reactions:
-        if react.emoji != react_emoji:
-            continue
-        not_taken_users = [user async for user in react.users() if not user.bot]
+    if msg:
+        for react in msg.reactions:
+            if react.emoji != react_emoji:
+                continue
+            not_taken_users = [user async for user in react.users() if not user.bot]
 
     # そのチャンネルに参加しているユーザーを取得
     member_ids = v_channel.voice_states.keys()
