@@ -63,7 +63,7 @@ async def on_message(message):
 
 
 @bot.command()
-async def abb(ctx):
+async def ab(ctx):
 
     # コマンド送信主の入ってるチャンネルを取得
     try:
