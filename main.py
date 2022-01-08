@@ -68,7 +68,7 @@ async def ab(ctx):
     # コマンド送信主の入ってるチャンネルを取得
     try:
         v_channel = ctx.author.voice.channel
-    except CommandInvokeError:
+    except AttributeError:
         await ctx.send("コマンドの実行者はボイスチャンネルに入室してください")
         return
 
@@ -148,7 +148,7 @@ async def reset(ctx):
 
     try:
         v_channel = ctx.author.voice.channel
-    except CommandInvokeError:
+    except AttributeError:
         await ctx.send("コマンドの実行者はボイスチャンネルに入室してください")
         return
 
